@@ -1,4 +1,4 @@
-// Version 1.10
+// Version 1.11
 
 #include <Wire.h>
 #include <U8g2lib.h>
@@ -28,6 +28,7 @@ float gastado = 0;
 float restante = presupuesto - gastado;  // Calcular el valor restante
 float entryValue = 0;  // Variable para almacenar el valor ingresado en la pantalla de entrada
 bool entryStarted = false;  // Flag to indicate if the entry has started
+bool isIncomeMode = false;  // Flag to indicate if the entry mode is for income
 
 // Estado de la pantalla actual
 enum Screen { MAIN, ENTRY };
@@ -42,14 +43,25 @@ void loop() {
 
   if (key) {
     if (key == 'B') {
-      // Cambiar a la pantalla de entrada
+      // Cambiar a la pantalla de entrada para gastos
       currentScreen = ENTRY;
       entryValue = 0;  // Inicializar el valor de entrada
       entryStarted = false;  // Resetear el flag de inicio
+      isIncomeMode = false;  // Establecer modo de gasto
+    } else if (key == 'A') {
+      // Cambiar a la pantalla de entrada para ingresos
+      currentScreen = ENTRY;
+      entryValue = 0;  // Inicializar el valor de entrada
+      entryStarted = false;  // Resetear el flag de inicio
+      isIncomeMode = true;  // Establecer modo de ingreso
     } else if (key == 'D') {
       // Confirmar la entrada y volver a la pantalla principal
       if (currentScreen == ENTRY) {
-        gastado += entryValue;  // Actualizar el valor de gastado
+        if (isIncomeMode) {
+          gastado -= entryValue;  // Ingreso: reduce el gasto (aumenta el restante)
+        } else {
+          gastado += entryValue;  // Gasto: incrementa el gasto (reduce el restante)
+        }
         restante = presupuesto - gastado;  // Calcular el nuevo valor restante
         currentScreen = MAIN;
       }
@@ -79,6 +91,9 @@ void loop() {
       }
     }
   }
+
+  // Calcular el valor restante
+  restante = presupuesto - gastado;
 
   u8g2.clearBuffer();  // Limpiar la memoria interna
 
@@ -118,7 +133,11 @@ void loop() {
   } else if (currentScreen == ENTRY) {
     // Pantalla de entrada
     u8g2.setFont(u8g2_font_helvB08_tr);
-    u8g2.drawStr(2, 50, "Gasto:");
+    if (isIncomeMode) {
+      u8g2.drawStr(2, 50, "Ingreso:");  // Mostrar "Ingreso" para ingresos
+    } else {
+      u8g2.drawStr(2, 50, "Gasto:");  // Mostrar "Gasto" para gastos
+    }
 
     u8g2.setFont(u8g2_font_helvR10_tr);
     u8g2.setCursor(2, 70); // Ajusta la posición según necesites
