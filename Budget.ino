@@ -1,4 +1,4 @@
-// Version 1.13
+// Version 1.15
 
 #include <Wire.h>
 #include <U8g2lib.h>
@@ -23,9 +23,9 @@ byte colPins[COLS] = {5, 4, 3, 2};    // Pines de las columnas
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
 // Declaración de variables para los valores
-float presupuesto = 1300.00;
+float presupuesto = 0;
 float gastado = 0;
-float restante = presupuesto - gastado;  // Calcular el valor restante
+float disponible = presupuesto - gastado;  // Calcular el valor disponible
 float entryValue = 0;  // Variable para almacenar el valor ingresado en la pantalla de entrada
 bool entryStarted = false;  // Flag to indicate if the entry has started
 
@@ -93,8 +93,8 @@ void loop() {
     }
   }
 
-  // Calcular el valor restante
-  restante = presupuesto - gastado;
+  // Calcular el valor disponible
+  disponible = presupuesto - gastado;
 
   u8g2.clearBuffer();  // Limpiar la memoria interna
 
@@ -123,14 +123,14 @@ void loop() {
     // Línea divisoria
     u8g2.drawStr(0, 75, "_____________________________");
 
-    // Restante
+    // Disponible
     u8g2.setFont(u8g2_font_helvB08_tr);
-    u8g2.drawStr(2, 92, "Restante");
+    u8g2.drawStr(2, 92, "Disponible");
 
     u8g2.setFont(u8g2_font_helvR10_tr);
     u8g2.setCursor(2, 110);
     u8g2.print("$");
-    u8g2.print(restante, 2);  // Mostrar con 2 decimales
+    u8g2.print(disponible, 2);  // Mostrar con 2 decimales
   } else if (currentScreen == ENTRY_ADD) {
     // Pantalla de entrada para agregar
     u8g2.setFont(u8g2_font_helvB08_tr);
