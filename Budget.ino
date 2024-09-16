@@ -1,4 +1,4 @@
-// Version 1.7
+//Version 1.8
 
 #include <Wire.h>
 #include <U8g2lib.h>
@@ -26,7 +26,8 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 float presupuesto = 1300.00;
 float gastado = 0;
 float restante = presupuesto - gastado;  // Calcular el valor restante
-String entryInput = "";  // Para almacenar la entrada en la pantalla de entrada
+float entryValue = 0;  // Variable para almacenar el valor ingresado en la pantalla de entrada
+bool entryStarted = false;  // Flag to indicate if the entry has started
 
 // Estado de la pantalla actual
 enum Screen { MAIN, ENTRY };
@@ -43,17 +44,35 @@ void loop() {
     if (key == 'A') {
       // Cambiar a la pantalla de entrada
       currentScreen = ENTRY;
-      entryInput = "";  // Limpiar la entrada al cambiar de pantalla
+      entryValue = 0;  // Inicializar el valor de entrada
+      entryStarted = false;  // Resetear el flag de inicio
     } else if (key == '#') {
       // Cambiar de vuelta a la pantalla principal
       currentScreen = MAIN;
     } else if (currentScreen == ENTRY) {
-      // En la pantalla de entrada, añadir números a la entrada
+      // En la pantalla de entrada, añadir números al valor
       if (isDigit(key) || key == '.') {
-        entryInput += key;
+        if (key == '.' && entryStarted) {
+          // No permitir múltiples puntos decimales
+          return;
+        }
+        
+        if (key == '.') {
+          entryStarted = true;  // Marcar que el punto decimal ha sido ingresado
+        } else {
+          // Construir el número en formato float
+          entryValue = entryValue * 10 + (key - '0');
+          if (entryStarted) {
+            // Ajustar la posición del punto decimal
+            entryValue = entryValue / 10;
+          }
+        }
       }
     }
   }
+
+  // Calcular el valor restante
+  restante = presupuesto - gastado;
 
   u8g2.clearBuffer();  // Limpiar la memoria interna
 
@@ -93,11 +112,12 @@ void loop() {
   } else if (currentScreen == ENTRY) {
     // Pantalla de entrada
     u8g2.setFont(u8g2_font_helvB08_tr);
-    u8g2.drawStr(2, 52, "Gastp");
+    u8g2.drawStr(2, 50, "Gasto:");
 
     u8g2.setFont(u8g2_font_helvR10_tr);
     u8g2.setCursor(2, 70); // Ajusta la posición según necesites
-    u8g2.print(entryInput);  // Mostrar el valor ingresado
+    u8g2.print("$");
+    u8g2.print(entryValue, 2);  // Mostrar el valor ingresado con 2 decimales
   }
 
   u8g2.sendBuffer();  // Transferir la memoria interna a la pantalla
