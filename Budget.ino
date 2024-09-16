@@ -1,4 +1,4 @@
-// Version 1.11
+// Version 1.12
 
 #include <Wire.h>
 #include <U8g2lib.h>
@@ -27,6 +27,7 @@ float presupuesto = 1300.00;
 float gastado = 0;
 float restante = presupuesto - gastado;  // Calcular el valor restante
 float entryValue = 0;  // Variable para almacenar el valor ingresado en la pantalla de entrada
+int decimalPlaces = 0;  // Número de dígitos después del punto decimal
 bool entryStarted = false;  // Flag to indicate if the entry has started
 bool isIncomeMode = false;  // Flag to indicate if the entry mode is for income
 
@@ -46,12 +47,14 @@ void loop() {
       // Cambiar a la pantalla de entrada para gastos
       currentScreen = ENTRY;
       entryValue = 0;  // Inicializar el valor de entrada
+      decimalPlaces = 0;  // Resetear el número de decimales
       entryStarted = false;  // Resetear el flag de inicio
       isIncomeMode = false;  // Establecer modo de gasto
     } else if (key == 'A') {
       // Cambiar a la pantalla de entrada para ingresos
       currentScreen = ENTRY;
       entryValue = 0;  // Inicializar el valor de entrada
+      decimalPlaces = 0;  // Resetear el número de decimales
       entryStarted = false;  // Resetear el flag de inicio
       isIncomeMode = true;  // Establecer modo de ingreso
     } else if (key == 'D') {
@@ -72,20 +75,21 @@ void loop() {
       }
     } else if (currentScreen == ENTRY) {
       // En la pantalla de entrada, añadir números al valor
-      if (isDigit(key) || key == '.') {
-        if (key == '.' && entryStarted) {
-          // No permitir múltiples puntos decimales
-          return;
-        }
-        
-        if (key == '.') {
+      if (isDigit(key) || key == '*') {
+        if (key == '*') {
+          if (entryStarted) {
+            // No permitir múltiples puntos decimales
+            return;
+          }
           entryStarted = true;  // Marcar que el punto decimal ha sido ingresado
         } else {
           // Construir el número en formato float
-          entryValue = entryValue * 10 + (key - '0');
           if (entryStarted) {
             // Ajustar la posición del punto decimal
-            entryValue = entryValue / 10;
+            decimalPlaces++;
+            entryValue += (key - '0') / pow(10, decimalPlaces);
+          } else {
+            entryValue = entryValue * 10 + (key - '0');
           }
         }
       }
