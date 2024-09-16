@@ -1,4 +1,4 @@
-// Version 1.9
+// Version 1.10
 
 #include <Wire.h>
 #include <U8g2lib.h>
@@ -47,8 +47,17 @@ void loop() {
       entryValue = 0;  // Inicializar el valor de entrada
       entryStarted = false;  // Resetear el flag de inicio
     } else if (key == 'D') {
-      // Cambiar de vuelta a la pantalla principal
-      currentScreen = MAIN;
+      // Confirmar la entrada y volver a la pantalla principal
+      if (currentScreen == ENTRY) {
+        gastado += entryValue;  // Actualizar el valor de gastado
+        restante = presupuesto - gastado;  // Calcular el nuevo valor restante
+        currentScreen = MAIN;
+      }
+    } else if (key == '#') {
+      // Cancelar la entrada y volver a la pantalla principal
+      if (currentScreen == ENTRY) {
+        currentScreen = MAIN;
+      }
     } else if (currentScreen == ENTRY) {
       // En la pantalla de entrada, añadir números al valor
       if (isDigit(key) || key == '.') {
@@ -70,9 +79,6 @@ void loop() {
       }
     }
   }
-
-  // Calcular el valor restante
-  restante = presupuesto - gastado;
 
   u8g2.clearBuffer();  // Limpiar la memoria interna
 
