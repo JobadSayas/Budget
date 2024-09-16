@@ -1,4 +1,4 @@
-// Version 1.12
+// Version 1.13
 
 #include <Wire.h>
 #include <U8g2lib.h>
@@ -27,12 +27,10 @@ float presupuesto = 1300.00;
 float gastado = 0;
 float restante = presupuesto - gastado;  // Calcular el valor restante
 float entryValue = 0;  // Variable para almacenar el valor ingresado en la pantalla de entrada
-int decimalPlaces = 0;  // Número de dígitos después del punto decimal
 bool entryStarted = false;  // Flag to indicate if the entry has started
-bool isIncomeMode = false;  // Flag to indicate if the entry mode is for income
 
 // Estado de la pantalla actual
-enum Screen { MAIN, ENTRY };
+enum Screen { MAIN, ENTRY_ADD, ENTRY_SUB, ENTRY_PRE };
 Screen currentScreen = MAIN;
 
 void setup() {
@@ -43,53 +41,52 @@ void loop() {
   char key = keypad.getKey();  // Leer la tecla presionada
 
   if (key) {
-    if (key == 'B') {
-      // Cambiar a la pantalla de entrada para gastos
-      currentScreen = ENTRY;
+    if (key == 'A') {
+      // Cambiar a la pantalla de entrada para agregar
+      currentScreen = ENTRY_ADD;
       entryValue = 0;  // Inicializar el valor de entrada
-      decimalPlaces = 0;  // Resetear el número de decimales
       entryStarted = false;  // Resetear el flag de inicio
-      isIncomeMode = false;  // Establecer modo de gasto
-    } else if (key == 'A') {
-      // Cambiar a la pantalla de entrada para ingresos
-      currentScreen = ENTRY;
+    } else if (key == 'B') {
+      // Cambiar a la pantalla de entrada para restar
+      currentScreen = ENTRY_SUB;
       entryValue = 0;  // Inicializar el valor de entrada
-      decimalPlaces = 0;  // Resetear el número de decimales
       entryStarted = false;  // Resetear el flag de inicio
-      isIncomeMode = true;  // Establecer modo de ingreso
-    } else if (key == 'D') {
-      // Confirmar la entrada y volver a la pantalla principal
-      if (currentScreen == ENTRY) {
-        if (isIncomeMode) {
-          gastado -= entryValue;  // Ingreso: reduce el gasto (aumenta el restante)
-        } else {
-          gastado += entryValue;  // Gasto: incrementa el gasto (reduce el restante)
-        }
-        restante = presupuesto - gastado;  // Calcular el nuevo valor restante
-        currentScreen = MAIN;
-      }
+    } else if (key == 'C') {
+      // Cambiar a la pantalla de entrada para establecer presupuesto
+      currentScreen = ENTRY_PRE;
+      entryValue = 0;  // Inicializar el valor de entrada
+      entryStarted = false;  // Resetear el flag de inicio
     } else if (key == '#') {
-      // Cancelar la entrada y volver a la pantalla principal
-      if (currentScreen == ENTRY) {
-        currentScreen = MAIN;
+      // Cambiar de vuelta a la pantalla principal sin hacer cambios
+      currentScreen = MAIN;
+    } else if (key == 'D') {
+      // Confirmar y aplicar cambios
+      if (currentScreen == ENTRY_ADD) {
+        gastado -= entryValue;
+      } else if (currentScreen == ENTRY_SUB) {
+        gastado += entryValue;
+      } else if (currentScreen == ENTRY_PRE) {
+        presupuesto = entryValue;
+        gastado = 0;  // Resetear gastado al establecer un nuevo presupuesto
       }
-    } else if (currentScreen == ENTRY) {
-      // En la pantalla de entrada, añadir números al valor
+      // Cambiar de vuelta a la pantalla principal
+      currentScreen = MAIN;
+    } else if (currentScreen == ENTRY_ADD || currentScreen == ENTRY_SUB || currentScreen == ENTRY_PRE) {
+      // En las pantallas de entrada, añadir números al valor
       if (isDigit(key) || key == '*') {
+        if (key == '*' && entryStarted) {
+          // No permitir múltiples puntos decimales
+          return;
+        }
+        
         if (key == '*') {
-          if (entryStarted) {
-            // No permitir múltiples puntos decimales
-            return;
-          }
           entryStarted = true;  // Marcar que el punto decimal ha sido ingresado
         } else {
           // Construir el número en formato float
+          entryValue = entryValue * 10 + (key - '0');
           if (entryStarted) {
             // Ajustar la posición del punto decimal
-            decimalPlaces++;
-            entryValue += (key - '0') / pow(10, decimalPlaces);
-          } else {
-            entryValue = entryValue * 10 + (key - '0');
+            entryValue = entryValue / 10;
           }
         }
       }
@@ -134,14 +131,28 @@ void loop() {
     u8g2.setCursor(2, 110);
     u8g2.print("$");
     u8g2.print(restante, 2);  // Mostrar con 2 decimales
-  } else if (currentScreen == ENTRY) {
-    // Pantalla de entrada
+  } else if (currentScreen == ENTRY_ADD) {
+    // Pantalla de entrada para agregar
     u8g2.setFont(u8g2_font_helvB08_tr);
-    if (isIncomeMode) {
-      u8g2.drawStr(2, 50, "Ingreso:");  // Mostrar "Ingreso" para ingresos
-    } else {
-      u8g2.drawStr(2, 50, "Gasto:");  // Mostrar "Gasto" para gastos
-    }
+    u8g2.drawStr(2, 50, "Ingreso:");
+
+    u8g2.setFont(u8g2_font_helvR10_tr);
+    u8g2.setCursor(2, 70); // Ajusta la posición según necesites
+    u8g2.print("$");
+    u8g2.print(entryValue, 2);  // Mostrar el valor ingresado con 2 decimales
+  } else if (currentScreen == ENTRY_SUB) {
+    // Pantalla de entrada para restar
+    u8g2.setFont(u8g2_font_helvB08_tr);
+    u8g2.drawStr(2, 50, "Gasto:");
+
+    u8g2.setFont(u8g2_font_helvR10_tr);
+    u8g2.setCursor(2, 70); // Ajusta la posición según necesites
+    u8g2.print("$");
+    u8g2.print(entryValue, 2);  // Mostrar el valor ingresado con 2 decimales
+  } else if (currentScreen == ENTRY_PRE) {
+    // Pantalla de entrada para establecer presupuesto
+    u8g2.setFont(u8g2_font_helvB08_tr);
+    u8g2.drawStr(2, 50, "Presupuesto:");
 
     u8g2.setFont(u8g2_font_helvR10_tr);
     u8g2.setCursor(2, 70); // Ajusta la posición según necesites
