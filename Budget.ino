@@ -1,4 +1,4 @@
-// Version 1.5
+// Version 1.7
 
 #include <Wire.h>
 #include <U8g2lib.h>
@@ -22,10 +22,15 @@ byte colPins[COLS] = {5, 4, 3, 2};    // Pines de las columnas
 // Crear una instancia de Keypad
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
-// Declaración de variables para los valores, ahora como float para permitir decimales
+// Declaración de variables para los valores
 float presupuesto = 1300.00;
 float gastado = 0;
 float restante = presupuesto - gastado;  // Calcular el valor restante
+String entryInput = "";  // Para almacenar la entrada en la pantalla de entrada
+
+// Estado de la pantalla actual
+enum Screen { MAIN, ENTRY };
+Screen currentScreen = MAIN;
 
 void setup() {
   u8g2.begin();  // Inicializar la pantalla
@@ -33,64 +38,67 @@ void setup() {
 
 void loop() {
   char key = keypad.getKey();  // Leer la tecla presionada
-  
-  // Si se presiona una tecla
+
   if (key) {
-    // Verificar si la tecla es un número o un punto decimal
-    if (isDigit(key) || key == '.') {
-      static String gastadoInput = "";
-      
-      // Agregar la tecla presionada al input del valor "gastado"
-      gastadoInput += key;
-      
-      // Convertir la entrada a un valor float
-      gastado = gastadoInput.toFloat();
-      
-      // Calcular el nuevo valor restante
-      restante = presupuesto - gastado;
-    }
-    
-    // Opcional: Implementar un carácter especial como '#' para resetear la entrada
-    if (key == '#') {
-      gastado = 0.0;
-      restante = presupuesto;
+    if (key == 'A') {
+      // Cambiar a la pantalla de entrada
+      currentScreen = ENTRY;
+      entryInput = "";  // Limpiar la entrada al cambiar de pantalla
+    } else if (key == '#') {
+      // Cambiar de vuelta a la pantalla principal
+      currentScreen = MAIN;
+    } else if (currentScreen == ENTRY) {
+      // En la pantalla de entrada, añadir números a la entrada
+      if (isDigit(key) || key == '.') {
+        entryInput += key;
+      }
     }
   }
 
   u8g2.clearBuffer();  // Limpiar la memoria interna
 
-  // Presupuesto
-  u8g2.setFont(u8g2_font_helvB08_tr);
-  u8g2.drawStr(2, 12, "Presupuesto");
+  if (currentScreen == MAIN) {
+    // Pantalla principal
+    u8g2.setFont(u8g2_font_helvB08_tr);
+    u8g2.drawStr(2, 12, "Presupuesto");
 
-  u8g2.setFont(u8g2_font_helvR10_tr);
-  u8g2.setCursor(2, 30);
-  u8g2.print("$");
-  u8g2.print(presupuesto, 2);  // Mostrar con 2 decimales
+    u8g2.setFont(u8g2_font_helvR10_tr);
+    u8g2.setCursor(2, 30);
+    u8g2.print("$");
+    u8g2.print(presupuesto, 2);  // Mostrar con 2 decimales
 
-  // Línea divisoria
-  u8g2.drawStr(0, 35, "_____________________________");
+    // Línea divisoria
+    u8g2.drawStr(0, 35, "_____________________________");
 
-  // Gastado
-  u8g2.setFont(u8g2_font_helvB08_tr);
-  u8g2.drawStr(2, 52, "Gastado");
+    // Gastado
+    u8g2.setFont(u8g2_font_helvB08_tr);
+    u8g2.drawStr(2, 52, "Gastado");
 
-  u8g2.setFont(u8g2_font_helvR10_tr);
-  u8g2.setCursor(2, 70);
-  u8g2.print("$");
-  u8g2.print(gastado, 2);  // Mostrar con 2 decimales
+    u8g2.setFont(u8g2_font_helvR10_tr);
+    u8g2.setCursor(2, 70);
+    u8g2.print("$");
+    u8g2.print(gastado, 2);  // Mostrar con 2 decimales
 
-  // Línea divisoria
-  u8g2.drawStr(0, 75, "_____________________________");
+    // Línea divisoria
+    u8g2.drawStr(0, 75, "_____________________________");
 
-  // Restante
-  u8g2.setFont(u8g2_font_helvB08_tr);
-  u8g2.drawStr(2, 92, "Restante");
+    // Restante
+    u8g2.setFont(u8g2_font_helvB08_tr);
+    u8g2.drawStr(2, 92, "Restante");
 
-  u8g2.setFont(u8g2_font_helvR10_tr);
-  u8g2.setCursor(2, 110);
-  u8g2.print("$");
-  u8g2.print(restante, 2);  // Mostrar con 2 decimales
+    u8g2.setFont(u8g2_font_helvR10_tr);
+    u8g2.setCursor(2, 110);
+    u8g2.print("$");
+    u8g2.print(restante, 2);  // Mostrar con 2 decimales
+  } else if (currentScreen == ENTRY) {
+    // Pantalla de entrada
+    u8g2.setFont(u8g2_font_helvB08_tr);
+    u8g2.drawStr(2, 52, "Gastp");
+
+    u8g2.setFont(u8g2_font_helvR10_tr);
+    u8g2.setCursor(2, 70); // Ajusta la posición según necesites
+    u8g2.print(entryInput);  // Mostrar el valor ingresado
+  }
 
   u8g2.sendBuffer();  // Transferir la memoria interna a la pantalla
   delay(100);  // Pequeño retraso para evitar rebotes en el teclado
