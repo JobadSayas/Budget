@@ -1,4 +1,4 @@
-//Version 1.8
+// Version 1.9
 
 #include <Wire.h>
 #include <U8g2lib.h>
@@ -41,12 +41,12 @@ void loop() {
   char key = keypad.getKey();  // Leer la tecla presionada
 
   if (key) {
-    if (key == 'A') {
+    if (key == 'B') {
       // Cambiar a la pantalla de entrada
       currentScreen = ENTRY;
       entryValue = 0;  // Inicializar el valor de entrada
       entryStarted = false;  // Resetear el flag de inicio
-    } else if (key == '#') {
+    } else if (key == 'D') {
       // Cambiar de vuelta a la pantalla principal
       currentScreen = MAIN;
     } else if (currentScreen == ENTRY) {
