@@ -1,13 +1,15 @@
-// Version 1.16
-
+//Version 2.5
 #include <Wire.h>
 #include <U8g2lib.h>
 #include <Keypad.h>
+#include <RTClib.h>  // Librería RTClib para el módulo RTC
 
 // Crear una instancia de la librería U8g2 para la pantalla OLED con rotación de 90 grados (U8G2_R1)
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R1, U8X8_PIN_NONE, U8X8_PIN_NONE);
 
-// Configuración del teclado de membrana
+// Crear una instancia de la librería RTC de Adafruit
+RTC_DS3231 rtc;
+
 const byte ROWS = 4;  // 4 filas
 const byte COLS = 4;  // 4 columnas
 char keys[ROWS][COLS] = {
@@ -19,7 +21,6 @@ char keys[ROWS][COLS] = {
 byte rowPins[ROWS] = {9, 8, 7, 6};    // Pines de las filas
 byte colPins[COLS] = {5, 4, 3, 2};    // Pines de las columnas
 
-// Crear una instancia de Keypad
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
 // Declaración de variables para los valores
@@ -27,77 +28,111 @@ float presupuesto = 0;
 float gastado = 0;
 float disponible = presupuesto - gastado;  // Calcular el valor disponible
 float entryValue = 0;  // Variable para almacenar el valor ingresado en la pantalla de entrada
-bool entryStarted = false;  // Flag to indicate if the entry has started
-bool decimalPointEntered = false; // Flag to indicate if decimal point is entered
-int decimalPlace = 0; // Track the position of decimals
+bool entryStarted = false;  // Flag para indicar si la entrada ha comenzado
+bool decimalStarted = false;  // Flag para indicar si se ha ingresado un decimal
+int decimalCount = 0;  // Contador para los dígitos decimales
 
 // Estado de la pantalla actual
-enum Screen { MAIN, ENTRY_ADD, ENTRY_SUB, ENTRY_PRE };
+enum Screen { MAIN, MENU, ENTRY_ADD, ENTRY_SUB, ENTRY_PRE, ULTIMOS_REG };
 Screen currentScreen = MAIN;
 
+// Opciones de menú
+int menuIndex = 0;  // Índice para la navegación del menú
+const char* menuOptions[] = {"Registros", "Reiniciar"};
+const int menuOptionsCount = 2;
+
 void setup() {
-  u8g2.begin();  // Initialize the display
-  delay(100);    // Add a small delay to ensure the display is ready
+  u8g2.begin();  // Inicializar la pantalla
+  delay(100);    // Añadir una pequeña pausa para asegurar que la pantalla esté lista
+
+  // Iniciar el RTC
+  rtc.begin();
+
+  // Ajustar la hora y fecha solo si el RTC está perdido
+  if (rtc.lostPower()) {
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));  // Ajustar la fecha y hora actuales
+  }
 }
 
 void loop() {
   char key = keypad.getKey();  // Leer la tecla presionada
 
   if (key) {
-    if (key == 'A') {
-      // Cambiar a la pantalla de entrada para agregar
-      currentScreen = ENTRY_ADD;
-      entryValue = 0;  // Inicializar el valor de entrada
-      entryStarted = false;  // Resetear el flag de inicio
-      decimalPointEntered = false;
-      decimalPlace = 0;
-    } else if (key == 'B') {
-      // Cambiar a la pantalla de entrada para restar
-      currentScreen = ENTRY_SUB;
-      entryValue = 0;  // Inicializar el valor de entrada
-      entryStarted = false;  // Resetear el flag de inicio
-      decimalPointEntered = false;
-      decimalPlace = 0;
-    } else if (key == 'C') {
-      // Cambiar a la pantalla de entrada para establecer presupuesto
-      currentScreen = ENTRY_PRE;
-      entryValue = 0;  // Inicializar el valor de entrada
-      entryStarted = false;  // Resetear el flag de inicio
-      decimalPointEntered = false;
-      decimalPlace = 0;
-    } else if (key == '#') {
-      // Cambiar de vuelta a la pantalla principal sin hacer cambios
-      currentScreen = MAIN;
-    } else if (key == 'D') {
-      // Confirmar y aplicar cambios
-      if (currentScreen == ENTRY_ADD) {
-        gastado -= entryValue;
-      } else if (currentScreen == ENTRY_SUB) {
-        gastado += entryValue;
-      } else if (currentScreen == ENTRY_PRE) {
-        presupuesto = entryValue;
-        gastado = 0;  // Resetear gastado al establecer un nuevo presupuesto
+    if (currentScreen == MAIN) {
+      if (key == 'A') {
+        currentScreen = ENTRY_ADD;
+        entryValue = 0;  
+        entryStarted = false;
+        decimalStarted = false;  
+        decimalCount = 0;
+      } else if (key == 'B') {
+        currentScreen = ENTRY_SUB;
+        entryValue = 0;  
+        entryStarted = false;
+        decimalStarted = false;  
+        decimalCount = 0;
+      } else if (key == 'C') {
+        // Mostrar el menú
+        currentScreen = MENU;
+        menuIndex = 0;  // Iniciar en la primera opción del menú
       }
-      // Cambiar de vuelta a la pantalla principal
-      currentScreen = MAIN;
-    } else if (currentScreen == ENTRY_ADD || currentScreen == ENTRY_SUB || currentScreen == ENTRY_PRE) {
-      // En las pantallas de entrada, añadir números al valor
-      if (isDigit(key) || key == '*') {
-        if (key == '*' && decimalPointEntered) {
-          // No permitir múltiples puntos decimales
-          return;
+    } else if (currentScreen == MENU) {
+      if (key == 'A') {
+        menuIndex = (menuIndex - 1 + menuOptionsCount) % menuOptionsCount;  // Mover hacia arriba en el menú
+      } else if (key == 'B') {
+        menuIndex = (menuIndex + 1) % menuOptionsCount;  // Mover hacia abajo en el menú
+      } else if (key == 'D') {
+        if (menuIndex == 0) {
+          // Selección de "Registros"
+          currentScreen = ULTIMOS_REG;
+        } else if (menuIndex == 1) {
+          // Selección de "Reiniciar"
+          currentScreen = ENTRY_PRE;
+          entryValue = 0;  
+          entryStarted = false;
+          decimalStarted = false;  
+          decimalCount = 0;
         }
-        
-        if (key == '*') {
-          decimalPointEntered = true;  // Marcar que el punto decimal ha sido ingresado
-        } else {
-          if (decimalPointEntered) {
-            decimalPlace++;
-            entryValue += (key - '0') / pow(10, decimalPlace);
+      } else if (key == '#') {
+        // Regresar a la pantalla principal
+        currentScreen = MAIN;
+      }
+    } else if (currentScreen == ENTRY_ADD || currentScreen == ENTRY_SUB || currentScreen == ENTRY_PRE) {
+      if (key == '#') {
+        currentScreen = MAIN;  // Cancelar y regresar al menú principal
+      } else if (key == 'D') {
+        if (currentScreen == ENTRY_ADD) {
+          gastado -= entryValue;
+        } else if (currentScreen == ENTRY_SUB) {
+          gastado += entryValue;
+        } else if (currentScreen == ENTRY_PRE) {
+          presupuesto = entryValue;
+          gastado = 0;  // Resetear gastado al establecer un nuevo presupuesto
+        }
+        currentScreen = MAIN;
+      } else {
+        // En las pantallas de entrada, añadir números al valor
+        if (isDigit(key) || key == '*') {
+          if (key == '*' && decimalStarted) {
+            return;  // No permitir más de un punto decimal
+          }
+          
+          if (key == '*') {
+            decimalStarted = true;  // Comenzar la parte decimal
           } else {
-            entryValue = entryValue * 10 + (key - '0');
+            if (decimalStarted) {
+              decimalCount++;
+              entryValue += (key - '0') / pow(10, decimalCount);  // Añadir el dígito a la parte decimal
+            } else {
+              entryValue = entryValue * 10 + (key - '0');
+            }
           }
         }
+      }
+    } else if (currentScreen == ULTIMOS_REG) {
+      // Pantalla de registros, regresar a la pantalla principal
+      if (key == 'D' || key == '#') {
+        currentScreen = MAIN;
       }
     }
   }
@@ -112,63 +147,66 @@ void loop() {
     u8g2.setFont(u8g2_font_helvB08_tr);
     u8g2.drawStr(2, 12, "Presupuesto");
 
-    u8g2.setFont(u8g2_font_helvR10_tr);
+    u8g2.setFont(u8g2_font_helvR12_tr);
     u8g2.setCursor(2, 30);
     u8g2.print("$");
-    u8g2.print(presupuesto, 2);  // Mostrar con 2 decimales
+    u8g2.print(presupuesto, 2);
 
-    // Línea divisoria
     u8g2.drawStr(0, 35, "_____________________________");
 
-    // Gastado
     u8g2.setFont(u8g2_font_helvB08_tr);
     u8g2.drawStr(2, 52, "Gastado");
 
-    u8g2.setFont(u8g2_font_helvR10_tr);
+    u8g2.setFont(u8g2_font_helvR12_tr);
     u8g2.setCursor(2, 70);
     u8g2.print("$");
-    u8g2.print(gastado, 2);  // Mostrar con 2 decimales
+    u8g2.print(gastado, 2);
 
-    // Línea divisoria
     u8g2.drawStr(0, 75, "_____________________________");
 
-    // Disponible
     u8g2.setFont(u8g2_font_helvB08_tr);
     u8g2.drawStr(2, 92, "Disponible");
 
-    u8g2.setFont(u8g2_font_helvR10_tr);
+    u8g2.setFont(u8g2_font_helvR12_tr);
     u8g2.setCursor(2, 110);
     u8g2.print("$");
-    u8g2.print(disponible, 2);  // Mostrar con 2 decimales
-  } else if (currentScreen == ENTRY_ADD) {
-    // Pantalla de entrada para agregar
+    u8g2.print(disponible, 2);
+  } else if (currentScreen == MENU) {
+    // Menú de opciones
     u8g2.setFont(u8g2_font_helvB08_tr);
-    u8g2.drawStr(2, 50, "Ingreso:");
+    u8g2.drawStr(2, 12, "Menu");
 
-    u8g2.setFont(u8g2_font_helvR10_tr);
-    u8g2.setCursor(2, 70); // Ajusta la posición según necesites
-    u8g2.print("$");
-    u8g2.print(entryValue, 2);  // Mostrar el valor ingresado con 2 decimales
-  } else if (currentScreen == ENTRY_SUB) {
-    // Pantalla de entrada para restar
+    for (int i = 0; i < menuOptionsCount; i++) {
+      if (i == menuIndex) {
+        u8g2.drawStr(2, 30 + (i * 16), ">");
+      }
+      u8g2.setCursor(12, 30 + (i * 16));
+      u8g2.print(menuOptions[i]);
+    }
+  } else if (currentScreen == ENTRY_ADD || currentScreen == ENTRY_SUB || currentScreen == ENTRY_PRE) {
+    // Pantallas de entrada para agregar, restar o presupuesto
     u8g2.setFont(u8g2_font_helvB08_tr);
-    u8g2.drawStr(2, 50, "Gasto:");
+    u8g2.drawStr(2, 12, "Ingresar Monto");
 
-    u8g2.setFont(u8g2_font_helvR10_tr);
-    u8g2.setCursor(2, 70); // Ajusta la posición según necesites
+    u8g2.setFont(u8g2_font_helvR12_tr);
+    u8g2.setCursor(2, 30);
+
     u8g2.print("$");
-    u8g2.print(entryValue, 2);  // Mostrar el valor ingresado con 2 decimales
-  } else if (currentScreen == ENTRY_PRE) {
-    // Pantalla de entrada para establecer presupuesto
+    u8g2.print(entryValue, 2);
+  } else if (currentScreen == ULTIMOS_REG) {
+    // Pantalla de registros
     u8g2.setFont(u8g2_font_helvB08_tr);
-    u8g2.drawStr(2, 50, "Presupuesto:");
+    u8g2.drawStr(2, 12, "Registros");
 
-    u8g2.setFont(u8g2_font_helvR10_tr);
-    u8g2.setCursor(2, 70); // Ajusta la posición según necesites
-    u8g2.print("$");
-    u8g2.print(entryValue, 2);  // Mostrar el valor ingresado con 2 decimales
+    u8g2.setFont(u8g2_font_6x10_tr);  // Usar la fuente más pequeña disponible
+    u8g2.setCursor(2, 30);
+
+    // Obtener la fecha y hora actuales
+    DateTime now = rtc.now();
+    char dateStr[10];
+    snprintf(dateStr, sizeof(dateStr), "%02d/%02d/%02d", now.month(), now.day(), now.year() % 100);
+    u8g2.print(dateStr);
   }
 
-  u8g2.sendBuffer();  // Transferir la memoria interna a la pantalla
-  delay(100);  // Pequeño retraso para evitar rebotes en el teclado
+  u8g2.sendBuffer();  // Enviar el buffer a la pantalla
 }
