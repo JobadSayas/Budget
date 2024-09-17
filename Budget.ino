@@ -1,4 +1,5 @@
-//Version 2.5
+// Version 2.6
+
 #include <Wire.h>
 #include <U8g2lib.h>
 #include <Keypad.h>
@@ -183,6 +184,11 @@ void loop() {
       u8g2.setCursor(12, 30 + (i * 16));
       u8g2.print(menuOptions[i]);
     }
+
+    // Mostrar la versión en la parte inferior del menú
+    u8g2.setFont(u8g2_font_6x10_tr);  // Fuente más pequeña para la versión
+    u8g2.setCursor(2, 60);
+    u8g2.print("Ver 2.6");
   } else if (currentScreen == ENTRY_ADD || currentScreen == ENTRY_SUB || currentScreen == ENTRY_PRE) {
     // Pantallas de entrada para agregar, restar o presupuesto
     u8g2.setFont(u8g2_font_helvB08_tr);
