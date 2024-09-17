@@ -1,4 +1,4 @@
-// Version 1.15
+// Version 1.16
 
 #include <Wire.h>
 #include <U8g2lib.h>
@@ -28,13 +28,16 @@ float gastado = 0;
 float disponible = presupuesto - gastado;  // Calcular el valor disponible
 float entryValue = 0;  // Variable para almacenar el valor ingresado en la pantalla de entrada
 bool entryStarted = false;  // Flag to indicate if the entry has started
+bool decimalPointEntered = false; // Flag to indicate if decimal point is entered
+int decimalPlace = 0; // Track the position of decimals
 
 // Estado de la pantalla actual
 enum Screen { MAIN, ENTRY_ADD, ENTRY_SUB, ENTRY_PRE };
 Screen currentScreen = MAIN;
 
 void setup() {
-  u8g2.begin();  // Inicializar la pantalla
+  u8g2.begin();  // Initialize the display
+  delay(100);    // Add a small delay to ensure the display is ready
 }
 
 void loop() {
@@ -46,16 +49,22 @@ void loop() {
       currentScreen = ENTRY_ADD;
       entryValue = 0;  // Inicializar el valor de entrada
       entryStarted = false;  // Resetear el flag de inicio
+      decimalPointEntered = false;
+      decimalPlace = 0;
     } else if (key == 'B') {
       // Cambiar a la pantalla de entrada para restar
       currentScreen = ENTRY_SUB;
       entryValue = 0;  // Inicializar el valor de entrada
       entryStarted = false;  // Resetear el flag de inicio
+      decimalPointEntered = false;
+      decimalPlace = 0;
     } else if (key == 'C') {
       // Cambiar a la pantalla de entrada para establecer presupuesto
       currentScreen = ENTRY_PRE;
       entryValue = 0;  // Inicializar el valor de entrada
       entryStarted = false;  // Resetear el flag de inicio
+      decimalPointEntered = false;
+      decimalPlace = 0;
     } else if (key == '#') {
       // Cambiar de vuelta a la pantalla principal sin hacer cambios
       currentScreen = MAIN;
@@ -74,19 +83,19 @@ void loop() {
     } else if (currentScreen == ENTRY_ADD || currentScreen == ENTRY_SUB || currentScreen == ENTRY_PRE) {
       // En las pantallas de entrada, añadir números al valor
       if (isDigit(key) || key == '*') {
-        if (key == '*' && entryStarted) {
+        if (key == '*' && decimalPointEntered) {
           // No permitir múltiples puntos decimales
           return;
         }
         
         if (key == '*') {
-          entryStarted = true;  // Marcar que el punto decimal ha sido ingresado
+          decimalPointEntered = true;  // Marcar que el punto decimal ha sido ingresado
         } else {
-          // Construir el número en formato float
-          entryValue = entryValue * 10 + (key - '0');
-          if (entryStarted) {
-            // Ajustar la posición del punto decimal
-            entryValue = entryValue / 10;
+          if (decimalPointEntered) {
+            decimalPlace++;
+            entryValue += (key - '0') / pow(10, decimalPlace);
+          } else {
+            entryValue = entryValue * 10 + (key - '0');
           }
         }
       }
