@@ -1,4 +1,4 @@
-// Version 2.14
+// Version 2.16
 
 #include <Wire.h>
 #include <U8g2lib.h>
@@ -29,7 +29,7 @@ float presupuesto = 0;
 float gastado = 0;
 float disponible = presupuesto - gastado;  // Calcular el valor disponible
 float entryValue = 0;  // Variable para almacenar el valor ingresado en la pantalla de entrada
-float lastGastos[3] = {0, 0, 0};  // Array para almacenar los últimos 3 gastos
+float lastGastos[5] = {0, 0, 0, 0, 0};  // Array para almacenar los últimos 5 gastos
 int gastoCount = 0;  // Contador para el número de gastos ingresados
 bool entryStarted = false;  // Flag para indicar si la entrada ha comenzado
 bool decimalStarted = false;  // Flag para indicar si se ha ingresado un decimal
@@ -107,32 +107,34 @@ void loop() {
         if (currentScreen == ENTRY_ADD) {
           gastado -= entryValue;
           // Guardar el nuevo gasto y actualizar el array
-          if (gastoCount < 3) {
+          if (gastoCount < 5) {
             lastGastos[gastoCount] = entryValue;
             gastoCount++;
           } else {
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < 4; i++) {
               lastGastos[i] = lastGastos[i + 1];  // Desplazar los valores
             }
-            lastGastos[2] = entryValue;  // Añadir el nuevo gasto al final
+            lastGastos[4] = entryValue;  // Añadir el nuevo gasto al final
           }
         } else if (currentScreen == ENTRY_SUB) {
           gastado += entryValue;
           // Guardar el nuevo gasto y actualizar el array
-          if (gastoCount < 3) {
+          if (gastoCount < 5) {
             lastGastos[gastoCount] = entryValue;
             gastoCount++;
           } else {
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < 4; i++) {
               lastGastos[i] = lastGastos[i + 1];  // Desplazar los valores
             }
-            lastGastos[2] = entryValue;  // Añadir el nuevo gasto al final
+            lastGastos[4] = entryValue;  // Añadir el nuevo gasto al final
           }
         } else if (currentScreen == ENTRY_PRE) {
           presupuesto = entryValue;
           gastado = 0;  // Resetear gastado al establecer un nuevo presupuesto
           // Limpiar los registros
-          lastGastos[0] = lastGastos[1] = lastGastos[2] = 0;
+          for (int i = 0; i < 5; i++) {
+            lastGastos[i] = 0;
+          }
           gastoCount = 0;
         }
         currentScreen = MAIN;
@@ -213,7 +215,7 @@ void loop() {
     // Mostrar la versión en la parte inferior del menú
     u8g2.setFont(u8g2_font_6x10_tr);  // Fuente más pequeña para la versión
     u8g2.setCursor(2, 60);
-    u8g2.print("Ver 2.14");
+    u8g2.print("Ver 2.16");
   } else if (currentScreen == ENTRY_ADD || currentScreen == ENTRY_SUB || currentScreen == ENTRY_PRE) {
     // Pantallas de entrada para agregar, restar o presupuesto
     if (currentScreen == ENTRY_ADD) {
@@ -238,7 +240,7 @@ void loop() {
     u8g2.drawStr(2, 12, "Registros");
 
     u8g2.setFont(u8g2_font_6x10_tr);  // Fuente más pequeña para los registros
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 5; i++) {
       if (lastGastos[i] != 0 || (i == 0 && gastoCount == 0)) {
         u8g2.setCursor(2, 30 + (i * 10));  // Ajustar la posición de acuerdo a los gastos
         u8g2.print("$");
