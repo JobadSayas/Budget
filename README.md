@@ -28,16 +28,19 @@ This project implements a **budget management system** based on Arduino, allowin
 
 <table>
   <tr>
-    <td colspan="3" align="center">
-      <img src="./screenshots/desktop-view.jpg" alt="Descripción del screenshot" width="66%">
+    <td>
+      <img src="./screenshots/BudgetDummy-1.png" width="100%">
+    </td>
+    <td>
+      <img src="./screenshots/BudgetDummy-2.png" width="100%">
     </td>
   </tr>
   <tr>
     <td>
-      <img src="./screenshots/mobile-view.png" alt="Descripción del screenshot" width="100%">
+      <img src="./screenshots/BudgetDummy-3.png" width="100%">
     </td>
     <td>
-      <img src="./screenshots/records-view.png" alt="Descripción del screenshot" width="100%">
+      <img src="./screenshots/BudgetDummy-4.png" width="100%">
     </td>
   </tr>
 </table>
