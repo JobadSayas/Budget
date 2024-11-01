@@ -1,15 +1,11 @@
-// Version 2.20
+float version = 3.02;
 
 #include <Wire.h>
 #include <U8g2lib.h>
 #include <Keypad.h>
-#include <RTClib.h>  // Librería RTClib para el módulo RTC
 
 // Crear una instancia de la librería U8g2 para la pantalla OLED con rotación de 90 grados (U8G2_R1)
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R1, U8X8_PIN_NONE, U8X8_PIN_NONE);
-
-// Crear una instancia de la librería RTC de Adafruit
-RTC_DS3231 rtc;
 
 const byte ROWS = 4;  // 4 filas
 const byte COLS = 4;  // 4 columnas
@@ -34,6 +30,7 @@ int gastoCount = 0;  // Contador para el número de gastos ingresados
 bool entryStarted = false;  // Flag para indicar si la entrada ha comenzado
 bool decimalStarted = false;  // Flag para indicar si se ha ingresado un decimal
 int decimalCount = 0;  // Contador para los dígitos decimales
+bool pantalla = true;
 
 // Estado de la pantalla actual
 enum Screen { MAIN, MENU, ENTRY_ADD, ENTRY_SUB, ENTRY_PRE, ULTIMOS_REG };
@@ -41,20 +38,12 @@ Screen currentScreen = MAIN;
 
 // Opciones de menú
 int menuIndex = 0;  // Índice para la navegación del menú
-const char* menuOptions[] = {"Registros", "Reiniciar"};
-const int menuOptionsCount = 2;
+const char* menuOptions[] = {"Registros", "Reiniciar", "Pantalla"};
+const int menuOptionsCount = 3;
 
 void setup() {
   u8g2.begin();  // Inicializar la pantalla
   delay(100);    // Añadir una pequeña pausa para asegurar que la pantalla esté lista
-
-  // Iniciar el RTC
-  rtc.begin();
-
-  // Ajustar la hora y fecha solo si el RTC está perdido
-  if (rtc.lostPower()) {
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));  // Ajustar la fecha y hora actuales
-  }
 }
 
 void loop() {
@@ -95,6 +84,10 @@ void loop() {
           entryStarted = false;
           decimalStarted = false;  
           decimalCount = 0;
+        }
+        else if (menuIndex == 2) {
+          // Selección de "Screen"
+          // Aquí puedes agregar la lógica que deseas para la opción "Screen"
         }
       } else if (key == '#') {
         // Regresar a la pantalla principal
@@ -214,8 +207,9 @@ void loop() {
 
     // Mostrar la versión en la parte inferior del menú
     u8g2.setFont(u8g2_font_6x10_tr);  // Fuente más pequeña para la versión
-    u8g2.setCursor(2, 60);
-    u8g2.print("Ver 2.16");
+    u8g2.setCursor(2, 85);
+    u8g2.print("Ver ");
+    u8g2.print(version);
   } else if (currentScreen == ENTRY_ADD || currentScreen == ENTRY_SUB || currentScreen == ENTRY_PRE) {
     // Pantallas de entrada para agregar, restar o presupuesto
     if (currentScreen == ENTRY_ADD) {
