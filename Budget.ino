@@ -1,4 +1,4 @@
-float version = 3.02;
+float version = 3.05;
 
 #include <Wire.h>
 #include <U8g2lib.h>
@@ -38,7 +38,7 @@ Screen currentScreen = MAIN;
 
 // Opciones de menú
 int menuIndex = 0;  // Índice para la navegación del menú
-const char* menuOptions[] = {"Registros", "Reiniciar", "Pantalla"};
+const char* menuOptions[] = {"Registros", "Pantalla", "Reiniciar"};
 const int menuOptionsCount = 3;
 
 void setup() {
@@ -78,6 +78,11 @@ void loop() {
           // Selección de "Registros"
           currentScreen = ULTIMOS_REG;
         } else if (menuIndex == 1) {
+          // Selección de "Pantalla"
+          u8g2.setPowerSave(1);  // Apagar la pantalla
+          pantalla = false;      // Actualizar el estado de la pantalla a apagada
+        }
+        else if (menuIndex == 2) {
           // Selección de "Reiniciar"
           currentScreen = ENTRY_PRE;
           entryValue = 0;  
@@ -85,13 +90,13 @@ void loop() {
           decimalStarted = false;  
           decimalCount = 0;
         }
-        else if (menuIndex == 2) {
-          // Selección de "Screen"
-          // Aquí puedes agregar la lógica que deseas para la opción "Screen"
-        }
       } else if (key == '#') {
-        // Regresar a la pantalla principal
-        currentScreen = MAIN;
+          // Regresar a la pantalla principal y encender la pantalla si está apagada
+          currentScreen = MAIN;
+          if (!pantalla) {
+              u8g2.setPowerSave(0);  // Encender la pantalla
+              pantalla = true;       // Actualizar el estado de la pantalla a encendida
+          }
       }
     } else if (currentScreen == ENTRY_ADD || currentScreen == ENTRY_SUB || currentScreen == ENTRY_PRE) {
       if (key == '#') {
