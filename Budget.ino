@@ -1,4 +1,4 @@
-float version = 3.06;
+float version = 3.07;
 
 #include <Wire.h>
 #include <U8g2lib.h>
@@ -174,7 +174,7 @@ void loop() {
     u8g2.drawStr(2, 12, "Presupuesto");
 
     u8g2.setFont(u8g2_font_helvR12_tr);
-    u8g2.setCursor(2, 30);
+    u8g2.setCursor(3, 30);
     u8g2.print("$");
     u8g2.print(presupuesto, 2);
 
@@ -184,7 +184,7 @@ void loop() {
     u8g2.drawStr(2, 52, "Gastado");
 
     u8g2.setFont(u8g2_font_helvR12_tr);
-    u8g2.setCursor(2, 70);
+    u8g2.setCursor(3, 70);
     u8g2.print("$");
     u8g2.print(gastado, 2);
 
@@ -194,7 +194,7 @@ void loop() {
     u8g2.drawStr(2, 92, "Disponible");
 
     u8g2.setFont(u8g2_font_helvR12_tr);
-    u8g2.setCursor(2, 110);
+    u8g2.setCursor(3, 110);
     u8g2.print("$");
     u8g2.print(disponible, 2);
   } else if (currentScreen == MENU) {
@@ -229,7 +229,7 @@ void loop() {
     }
 
     u8g2.setFont(u8g2_font_helvR12_tr);
-    u8g2.setCursor(2, 30);
+    u8g2.setCursor(3, 30);
 
     u8g2.print("$");
     u8g2.print(entryValue, 2);
